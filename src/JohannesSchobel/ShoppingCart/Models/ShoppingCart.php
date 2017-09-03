@@ -34,7 +34,6 @@ class ShoppingCart extends Model
         $shoppingcart = $classname::where('identifier', '=', $identifier)
                                     ->where('name', '=', $name)
                                     ->first();
-                                    //->firstOrCreate($this->defaultValues($identifier, $name));
 
         if (null === $shoppingcart) {
             $shoppingcart = new $classname();
