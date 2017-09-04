@@ -31,16 +31,7 @@ class ShoppingCart extends Model
         $name = $name ?: self::DEFAUlT_NAME;
 
         $classname = config('shoppingcart.models.shoppingcart');
-        $shoppingcart = $classname::where('identifier', '=', $identifier)
-                                    ->where('name', '=', $name)
-                                    ->first();
-
-        if (null === $shoppingcart) {
-            $shoppingcart = new $classname();
-            $shoppingcart->identifier = $identifier;
-            $shoppingcart->name = $name;
-            $shoppingcart->save();
-        }
+        $shoppingcart = $classname::firstOrNew($this->defaultValues($identifier, $name));
 
         return $shoppingcart;
     }
@@ -251,7 +242,6 @@ class ShoppingCart extends Model
         return [
             'identifier' => $identifier,
             'name' => $name,
-            'content' => null,
         ];
     }
 

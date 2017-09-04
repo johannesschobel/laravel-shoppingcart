@@ -310,7 +310,7 @@ class CartItem implements Arrayable
             'id'       => $this->id,
             'name'     => $this->name,
             'qty'      => $this->qty,
-            'values'   => [
+            'value'   => [
                 'price'    => $this->price(),
                 'subtotal' => $this->getSubtotal(),
                 'tax'      => $this->getTax(),
