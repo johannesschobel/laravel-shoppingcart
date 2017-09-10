@@ -27,6 +27,14 @@ class ShoppingCart extends Model
         'updated_at',
     ];
 
+    /**
+     * Load a cart from the database. If no cart exists, an empty cart is returned
+     *
+     * @param array|string $identifier
+     * @param null         $name
+     *
+     * @return mixed
+     */
     public function load($identifier, $name = null)
     {
         $name = $name ?: self::DEFAULT_NAME;
@@ -61,7 +69,7 @@ class ShoppingCart extends Model
         $content = $this->getContent();
 
         if ($content->has($cartItem->rowId)) {
-            $cartItem->qty += $content->get($cartItem->rowId)->qty;
+            $cartItem->qty = $cartItem->qty + $content->get($cartItem->rowId)->qty;
         }
 
         $content->put($cartItem->rowId, $cartItem);
@@ -81,11 +89,16 @@ class ShoppingCart extends Model
         if ($content->has($row)) {
             $content->pull($row);
             $this->content = serialize($content);
+
+            $this->save();
         }
 
         return $this;
     }
 
+    /**
+     * Removes the cart from the database
+     */
     public function clear()
     {
         $this->delete();
