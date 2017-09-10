@@ -31,24 +31,6 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Shoppingcart database settings
-    |--------------------------------------------------------------------------
-    |
-    | Here you can set the connection that the shoppingcart should use when
-    | storing and restoring a cart.
-    |
-    */
-
-    'database' => [
-
-        'connection' => null,
-
-        'table' => 'shoppingcarts',
-
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
     | Default number format
     |--------------------------------------------------------------------------
     |

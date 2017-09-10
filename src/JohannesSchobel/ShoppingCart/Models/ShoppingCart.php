@@ -8,7 +8,8 @@ use JohannesSchobel\ShoppingCart\Exceptions\InvalidShoppingCartRowException;
 
 class ShoppingCart extends Model
 {
-    // todo fix this
+	const DEFAULT_NAME = 'default';
+	
     protected $table = 'shoppingcarts';
 
     protected $fillable = [
@@ -28,7 +29,7 @@ class ShoppingCart extends Model
 
     public function load($identifier, $name = null)
     {
-        $name = $name ?: self::DEFAUlT_NAME;
+        $name = $name ?: self::DEFAULT_NAME;
 
         $classname = config('shoppingcart.models.shoppingcart');
         $shoppingcart = $classname::firstOrNew($this->defaultValues($identifier, $name));
