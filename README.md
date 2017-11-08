@@ -74,13 +74,13 @@ Removes the current instance of the cart from the database.
 ## ADD Items to the Cart
 
 ```php
-ShoppingCart::addItem($id, $name = null, $qty = null, $price = null, array $options = []);
+ShoppingCart::addItem($id, $name = null, $qty = null, Money $price = null, array $options = []);
 ```
 
 This method allows for adding items to the cart. The basic usage allows you to directly specify the item you want
 to set. For example
 ```php
-ShoppingCart::addItem('1234', 'Basic T-Shirt', 10, 9.99, ['size' => 'large', 'color' => 'black']);
+ShoppingCart::addItem('1234', 'Basic T-Shirt', 10, new Money(999, new Currency('EUR')), ['size' => 'large', 'color' => 'black']);
 ```
 would add 10 "Basic T-Shirts", each costs 9.99 to the cart. The user has specified a color and size.
 
@@ -97,9 +97,9 @@ would result in the same cart as above. However, the `id`, `name` and `price` ar
 Of course, you can pass arrays of elements as well!
 ```php
 ShoppingCart::addItem([
-    ['id' => '1234', 'name' => 'Basic T-Shirt', 'qty' => 1, 'price' => 9.99],
-    ['id' => '1234', 'name' => 'Basic T-Shirt', 'qty' => 10, 'price' => 9.99, ['color' => 'black'],
-    ['id' => '1234', 'name' => 'Basic T-Shirt', 'qty' => 5, 'price' => 9.99, ['size' => 'large'],
+    ['id' => '1234', 'name' => 'Basic T-Shirt', 'qty' => 1, 'price' => new Money(999, new Currency('EUR'))],
+    ['id' => '1234', 'name' => 'Basic T-Shirt', 'qty' => 10, 'price' => new Money(999, new Currency('EUR')), ['color' => 'black'],
+    ['id' => '1234', 'name' => 'Basic T-Shirt', 'qty' => 5, 'price' => new Money(999, new Currency('EUR')), ['size' => 'large'],
 ]);
 ```
 

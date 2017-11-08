@@ -2,6 +2,8 @@
 
 namespace JohannesSchobel\ShoppingCart\Contracts;
 
+use Money\Money;
+
 interface Buyable
 {
     /**
@@ -21,7 +23,7 @@ interface Buyable
     /**
      * Get the price of the Buyable item.
      *
-     * @return float
+     * @return Money
      */
     public function getBuyablePrice($options = null);
 }

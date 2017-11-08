@@ -2,6 +2,8 @@
 
 namespace JohannesSchobel\ShoppingCart\Traits;
 
+use Money\Money;
+
 trait CanBePurchased
 {
     /**
@@ -17,7 +19,7 @@ trait CanBePurchased
     /**
      * Get the description or title of the Buyable item.
      *
-     * @return string
+     * @return string|null
      */
     public function getBuyableDescription($options = null)
     {
@@ -31,12 +33,13 @@ trait CanBePurchased
     /**
      * Get the price of the Buyable item.
      *
-     * @return float
+     * @return Money|null
      */
     public function getBuyablePrice($options = null)
     {
         if (property_exists($this, 'price'))        return $this->price;
         if (property_exists($this, 'cost'))         return $this->cost;
+        if (property_exists($this, 'value'))        return $this->value;
 
         return null;
     }

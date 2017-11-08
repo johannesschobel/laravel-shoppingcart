@@ -26,27 +26,17 @@ return [
     | This default tax rate will be used
     |
     */
-
     'tax' => 19,
 
     /*
     |--------------------------------------------------------------------------
-    | Default number format
+    | Default currency
     |--------------------------------------------------------------------------
     |
-    | This defaults will be used for the formatted numbers if you don't
-    | set them in the method call.
+    | This default currency will be used if nothing is set
     |
     */
+    'currency' => new \Money\Currency('EUR'),
 
-    'format' => [
-
-        'decimals' => 2,
-
-        'decimal_point' => '.',
-
-        'thousand_separator' => ','
-
-    ],
 
 ];

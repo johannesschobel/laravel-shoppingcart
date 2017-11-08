@@ -3,8 +3,13 @@
 namespace JohannesSchobel\ShoppingCart\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Config;
 use JohannesSchobel\ShoppingCart\Contracts\Buyable;
 use JohannesSchobel\ShoppingCart\Exceptions\InvalidShoppingCartRowException;
+use Money\Currencies\ISOCurrencies;
+use Money\Currency;
+use Money\Formatter\DecimalMoneyFormatter;
+use Money\Money;
 
 class ShoppingCart extends Model
 {
@@ -51,7 +56,7 @@ class ShoppingCart extends Model
      * @param mixed     $id
      * @param mixed     $name
      * @param int|float $qty
-     * @param float     $price
+     * @param Money     $price
      * @param array     $options
      *
      * @return \JohannesSchobel\ShoppingCart\Models\ShoppingCart
@@ -69,7 +74,7 @@ class ShoppingCart extends Model
         $content = $this->getContent();
 
         if ($content->has($cartItem->rowId)) {
-            $cartItem->qty = $cartItem->qty + $content->get($cartItem->rowId)->qty;
+            $cartItem->setQuantity($cartItem->getQuantity() + $content->get($cartItem->rowId)->qty);
         }
 
         $content->put($cartItem->rowId, $cartItem);
@@ -81,6 +86,13 @@ class ShoppingCart extends Model
         return $this;
     }
 
+    /**
+     * Remove a specified row from the shoppingcart
+     *
+     * @param $row
+     *
+     * @return $this
+     */
     public function removeItem($row)
     {
         $content = $this->getContent();
@@ -107,24 +119,25 @@ class ShoppingCart extends Model
     /**
      * Create a new CartItem from the supplied attributes.
      *
-     * @param mixed     $id
-     * @param mixed     $name
-     * @param int|float $qty
-     * @param float     $price
-     * @param array     $options
-     * @return \JohannesSchobel\ShoppingCart\Models\CartItem
+     * @param       $id
+     * @param       $name
+     * @param       $qty
+     * @param Money $value
+     * @param array $options
+     *
+     * @return CartItem
      */
-    private function createCartItem($id, $name, $qty, $price, array $options)
+    private function createCartItem($id, $name, $qty, Money $value, array $options = [])
     {
         if ($id instanceof Buyable) {
-            $cartItem = CartItem::fromBuyable($id, $options ?: []);
+            $cartItem = CartItem::fromBuyable($id, $options);
             $cartItem->setQuantity($qty ?: 1);
             $cartItem->associate($id);
         } elseif (is_array($id)) {
             $cartItem = CartItem::fromArray($id);
             $cartItem->setQuantity($id['qty']);
         } else {
-            $cartItem = CartItem::fromAttributes($id, $name, $price, $options);
+            $cartItem = CartItem::fromAttributes($id, $name, $value, $options);
             $cartItem->setQuantity($qty);
         }
 
@@ -159,9 +172,12 @@ class ShoppingCart extends Model
         return $this;
     }
 
+    /**
+     * @return \Illuminate\Support\Collection
+     */
     public function getContent()
     {
-        if(null === $this->content) {
+        if (null === $this->content) {
             return collect();
         }
 
@@ -169,81 +185,74 @@ class ShoppingCart extends Model
     }
 
     /**
-     * @return mixed
+     * @return int
      */
-    public function getItemCount() {
+    public function getItemCount()
+    {
         return $this->getContent()->count();
     }
 
     /**
      * Get the total price of the items in the cart.
      *
-     * @param int    $decimals
-     *
-     * @return float
+     * @return Money
      */
-    public function getTotal($decimals = null)
+    public function getTotal()
     {
         $content = $this->getContent();
 
-        $total = $content->reduce(function ($total, CartItem $cartItem) {
-            return $total + ($cartItem->getTotal());
-        }, 0);
+        $total = $content->reduce(function (Money $total, CartItem $cartItem) {
+            return $total->add($cartItem->getTotal());
+        }, new Money(0, Config::get('shoppingcart.currency')));
 
-        return $this->numberFormat($total, $decimals);
+        return $total;
     }
 
     /**
      * Get the total tax of the items in the cart.
      *
-     * @param int    $decimals
-     *
-     * @return float
+     * @return Money
      */
-    public function getTax($decimals = null)
+    public function getTax()
     {
         $content = $this->getContent();
 
-        $tax = $content->reduce(function ($tax, CartItem $cartItem) use ($decimals){
-            return $tax + ($cartItem->getTaxTotal($decimals));
-        }, 0);
+        $tax = $content->reduce(function (Money $tax, CartItem $cartItem) {
+            return $tax->add($cartItem->getTaxTotal());
+        }, new Money(0, Config::get('shoppingcart.currency')));
 
-        return $this->numberFormat($tax, $decimals);
+        return $tax;
     }
 
     /**
      * Get the subtotal (total - tax) of the items in the cart.
      *
-     * @param int    $decimals
-     *
-     * @return float
+     * @return Money
      */
-    public function getSubTotal($decimals = null)
+    public function getSubTotal()
     {
         $content = $this->getContent();
 
-        $subTotal = $content->reduce(function ($subTotal, CartItem $cartItem) {
-            return $subTotal + ($cartItem->getSubtotal());
-        }, 0);
+        $subTotal = $content->reduce(function (Money $subTotal, CartItem $cartItem) {
+            return $subTotal->add($cartItem->getSubtotal());
+        }, new Money(0, Config::get('shoppingcart.currency')));
 
-        return $this->numberFormat($subTotal, $decimals);
+        return $subTotal;
     }
 
     /**
-     * Get the formatted number
+     * Format a money string
      *
-     * @param $value
-     * @param $decimals
+     * @param Money $value
      *
-     * @return int|float
+     * @return string
      */
-    private function numberFormat($value, $decimals = null)
+    public function formatMoney(Money $value)
     {
-        if (is_null($decimals)) {
-            $decimals = config('shoppingcart.format.decimals', 2);
-        }
+        $currencies = new ISOCurrencies();
+        $moneyFormatter = new DecimalMoneyFormatter($currencies);
 
-        return round(floatval($value), $decimals);
+        return $moneyFormatter->format($value);
     }
 
     /**
@@ -267,8 +276,11 @@ class ShoppingCart extends Model
      */
     private function isMulti($item)
     {
-        if ( ! is_array($item)) return false;
-        return is_array(head($item)) || head($item) instanceof Buyable;
+        if (! is_array($item)) {
+            return false;
+        }
+
+        return is_array(head($item)) || (head($item) instanceof Buyable);
     }
 
     /**
@@ -283,8 +295,9 @@ class ShoppingCart extends Model
     {
         $content = $this->getContent();
 
-        if ( ! $content->has($row))
+        if (! $content->has($row)) {
             throw new InvalidShoppingCartRowException();
+        }
 
         return $content->get($row);
     }

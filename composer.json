@@ -3,7 +3,11 @@
     "description": "A Shopping Cart Implementation for Laravel",
     "license": "MIT",
     "keywords": [
-		"Laravel", "Shop", "Cart", "E-Commerce", "Shopping Cart"
+		"Laravel",
+        "Shop",
+        "Cart",
+        "E-Commerce",
+        "Shopping Cart"
 	],
     "authors": [
         {
@@ -13,7 +17,8 @@
     ],
     "require": {
         "php": ">=7.0",
-		"laravel/framework": "^5.4"
+		"laravel/framework": "^5.4",
+        "moneyphp/money" : "^3.0"
     },
     "require-dev": {
 	},

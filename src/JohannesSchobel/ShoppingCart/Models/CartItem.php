@@ -4,6 +4,9 @@ namespace JohannesSchobel\ShoppingCart\Models;
 
 use Illuminate\Contracts\Support\Arrayable;
 use JohannesSchobel\ShoppingCart\Contracts\Buyable;
+use Money\Currencies\ISOCurrencies;
+use Money\Formatter\DecimalMoneyFormatter;
+use Money\Money;
 
 class CartItem implements Arrayable
 {
@@ -12,42 +15,42 @@ class CartItem implements Arrayable
      *
      * @var string
      */
-    public $rowId;
+    private $rowId;
 
     /**
      * The ID of the cart item.
      *
      * @var int|string
      */
-    public $id;
+    private $id;
 
     /**
      * The quantity for this cart item.
      *
-     * @var int|float
+     * @var int
      */
-    public $qty;
+    private $qty = 1;
 
     /**
      * The name of the cart item.
      *
      * @var string
      */
-    public $name;
+    private $name;
 
     /**
-     * The price without TAX of the cart item.
+     * The money object representing the price WITHOUT taxes
      *
-     * @var float
+     * @var null
      */
-    public $price;
+    private $price = null;
 
     /**
      * The options for this cart item.
      *
      * @var array
      */
-    public $options;
+    private $options;
 
     /**
      * The FQN of the associated model.
@@ -68,123 +71,120 @@ class CartItem implements Arrayable
      *
      * @param int|string $id
      * @param string     $name
-     * @param float      $price
+     * @param Money      $price
      * @param array      $options
      *
      * @throws \InvalidArgumentException
      */
-    public function __construct($id, $name, $price, array $options = [])
+    public function __construct($id, $name, Money $price, array $options = [])
     {
         if (empty($id)) {
             throw new \InvalidArgumentException('Please supply a valid identifier.');
         }
+
         if (empty($name)) {
             throw new \InvalidArgumentException('Please supply a valid name.');
         }
-        if (strlen($price) < 0 || ! is_numeric($price)) {
+
+        if ($price->isNegative()) {
             throw new \InvalidArgumentException('Please supply a valid price.');
         }
 
         $this->id       = $id;
         $this->name     = $name;
-        $this->price    = floatval($price);
+        $this->price    = $price;
         $this->options  = new CartItemOptions($options);
         $this->rowId    = $this->generateRowId($id, $options);
     }
 
     /**
-     * Returns the formatted price without TAX.
+     * Returns the price without TAX.
      *
-     * @param int    $decimals
-     *
-     * @return float
+     * @return Money
      */
-    public function price($decimals = null)
+    public function getPrice()
     {
-        return $this->numberFormat($this->price, $decimals);
+        return $this->price;
     }
 
     /**
-     * Returns the formatted price with TAX.
+     * Returns the price with tax.
      *
-     * @param int $decimals
-     *
-     * @return float
-     *
+     * @return Money
      */
-    public function getPriceTax($decimals = null)
+    public function getPriceWithTax()
     {
-        $value = $this->price + $this->getTax();
-        return $this->numberFormat($value, $decimals);
+        $value = $this->price->add($this->getTax());
+        return $value;
     }
 
     /**
-     * Returns the formatted subtotal.
-     * Subtotal is price for whole CartItem without TAX
+     * Returns the subtotal (price for whole CartItem without TAX)
      *
-     * @param int    $decimals
-     *
-     * @return float
+     * @return Money
      */
-    public function getSubtotal($decimals = null)
+    public function getSubtotal()
     {
-        $value = $this->qty * $this->price;
-        return $this->numberFormat($value, $decimals);
+        $value = $this->price->multiply($this->qty);
+        return $value;
     }
     
     /**
-     * Returns the formatted total.
-     * Total is price for whole CartItem with TAX
+     * Returns the total price for whole CartItem with TAX
      *
-     * @param int    $decimals
-     *
-     * @return float
+     * @return Money
      */
-    public function getTotal($decimals = null)
+    public function getTotal()
     {
-        $value = $this->qty * ($this->getPriceTax());
-        return $this->numberFormat($value, $decimals);
+        $value = $this->getPriceWithTax()->multiply($this->qty);
+        return $value;
     }
 
     /**
-     * Returns the formatted tax.
+     * Returns the tax for one single item.
      *
-     * @param int    $decimals
-     *
-     * @return float
+     * @return Money
      */
-    public function getTax($decimals = null)
+    public function getTax()
     {
-        $value = $this->price * ($this->taxRate / 100);
-        return $this->numberFormat($value, $decimals);
+        $rate = $this->taxRate / 100;
+        $value = $this->price->multiply($rate);
+        return $value;
     }
     
     /**
-     * Returns the formatted tax.
+     * Returns the total taxes.
      *
-     * @param int    $decimals
-     *
-     * @return float
+     * @return Money
      */
-    public function getTaxTotal($decimals = null)
+    public function getTaxTotal()
     {
-        $value = $this->getTax() * $this->qty;
-        return $this->numberFormat($value, $decimals);
+        $value = $this->getTax()->multiply($this->qty);
+        return $value;
     }
 
     /**
      * Set the quantity for this cart item.
      *
-     * @param int|float $qty
+     * @param int $qty
      *
      * @throws \InvalidArgumentException
      */
     public function setQuantity($qty)
     {
-        if (empty($qty) || ! is_numeric($qty))
+        if (empty($qty) || ! is_numeric($qty)) {
             throw new \InvalidArgumentException('Please supply a valid quantity.');
+        }
 
         $this->qty = $qty;
+    }
+
+    /**
+     * @return int
+     */
+    public function getQuantity()
+    {
+        return $this->qty;
     }
 
     /**
@@ -213,11 +213,17 @@ class CartItem implements Arrayable
     /**
      * Set the tax rate.
      *
-     * @param int|float $taxRate
-     * @return \JohannesSchobel\ShoppingCart\Models\CartItem
+     * @param int $taxRate
+     *
+     * @return CartItem
+     * @throws \InvalidArgumentException
      */
     public function setTaxRate($taxRate)
     {
+        if (empty($taxRate) || ! is_numeric($taxRate)) {
+            throw new \InvalidArgumentException('Please supply a valid tax rate.');
+        }
+
         $this->taxRate = $taxRate;
         
         return $this;
@@ -248,7 +254,7 @@ class CartItem implements Arrayable
      * @param \JohannesSchobel\ShoppingCart\Contracts\Buyable $item
      * @param array   $options
      *
-     * @return \JohannesSchobel\ShoppingCart\Models\\CartItem
+     * @return \JohannesSchobel\ShoppingCart\Models\CartItem
      */
     public static function fromBuyable(Buyable $item, array $options = [])
     {
@@ -274,14 +280,14 @@ class CartItem implements Arrayable
      *
      * @param int|string $id
      * @param string     $name
-     * @param float      $price
+     * @param Money      $value
      * @param array      $options
      *
-     * @return \JohannesSchobel\ShoppingCart\Models\\CartItem
+     * @return \JohannesSchobel\ShoppingCart\Models\CartItem
      */
-    public static function fromAttributes($id, $name, $price, array $options = [])
+    public static function fromAttributes($id, $name, $value, array $options = [])
     {
-        return new self($id, $name, $price, $options);
+        return new self($id, $name, $value, $options);
     }
 
     /**
@@ -311,12 +317,18 @@ class CartItem implements Arrayable
             'name'     => $this->name,
             'qty'      => $this->qty,
             'value'   => [
-                'price'    => $this->price(),
-                'subtotal' => $this->getSubtotal(),
-                'tax'      => $this->getTax(),
-                'taxrate'  => $this->taxRate,
-                'taxtotal' => $this->getTaxTotal(),
-                'total'    => $this->getTotal(),
+                'currency' =>  $this->price->getCurrency(),
+
+                'price'    => $this->formatMoney($this->getPrice()),
+                'subtotal' => $this->formatMoney($this->getSubtotal()),
+
+                'taxes'    => [
+                    'tax' => $this->formatMoney($this->getTax()),
+                    'rate' => (string)$this->taxRate,
+                    'total' => $this->formatMoney($this->getTaxTotal()),
+                ],
+
+                'total'    => $this->formatMoney($this->getTotal()),
             ],
 
             'options'  => $this->options,
@@ -324,19 +336,17 @@ class CartItem implements Arrayable
     }
 
     /**
-     * Get the formatted number
+     * Format a money string
      *
-     * @param $value
-     * @param $decimals
+     * @param Money $value
      *
-     * @return int|float
+     * @return string
      */
-    private function numberFormat($value, $decimals = null)
+    private function formatMoney(Money $value)
     {
-        if (is_null($decimals)) {
-            $decimals = config('shoppingcart.format.decimals', 2);
-        }
+        $currencies = new ISOCurrencies();
+        $moneyFormatter = new DecimalMoneyFormatter($currencies);
 
-        return round(floatval($value), $decimals);
+        return $moneyFormatter->format($value);
     }
 }

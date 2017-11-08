@@ -6,5 +6,5 @@ use Exception;
 
 class InvalidShoppingCartRowException extends Exception
 {
-    public $message = 'The Shopping Cart does not contain this Row';
+    public $message = 'Invalid row for this shopping cart.';
 }
