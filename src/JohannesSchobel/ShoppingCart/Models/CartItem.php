@@ -46,6 +46,11 @@ class CartItem implements Arrayable
     private $price = null;
 
     /**
+     * @var string
+     */
+    private $type;
+
+    /**
      * The options for this cart item.
      *
      * @var array
@@ -71,12 +76,13 @@ class CartItem implements Arrayable
      *
      * @param int|string $id
      * @param string     $name
+     * @param string     $type
      * @param Money      $price
      * @param array      $options
      *
      * @throws \InvalidArgumentException
      */
-    public function __construct($id, $name, Money $price, array $options = [])
+    public function __construct($id, $name, $type, Money $price, array $options = [])
     {
         if (empty($id)) {
             throw new \InvalidArgumentException('Please supply a valid identifier.');
@@ -86,15 +92,20 @@ class CartItem implements Arrayable
             throw new \InvalidArgumentException('Please supply a valid name.');
         }
 
+        if (empty($type)) {
+            throw new \InvalidArgumentException('Please supply a valid type.');
+        }
+
         if ($price->isNegative()) {
             throw new \InvalidArgumentException('Please supply a valid price.');
         }
 
-        $this->id       = $id;
-        $this->name     = $name;
-        $this->price    = $price;
-        $this->options  = new CartItemOptions($options);
-        $this->rowId    = $this->generateRowId($id, $options);
+        $this->id = $id;
+        $this->name = $name;
+        $this->type = $type;
+        $this->price = $price;
+        $this->options = new CartItemOptions($options);
+        $this->rowId = $this->generateRowId($id, $options);
     }
 
     /**
@@ -258,7 +269,7 @@ class CartItem implements Arrayable
      */
     public static function fromBuyable(Buyable $item, array $options = [])
     {
-        return new self($item->getBuyableIdentifier($options), $item->getBuyableDescription($options), $item->getBuyablePrice($options), $options);
+        return new self($item->getBuyableIdentifier($options), $item->getBuyableDescription($options), $item->getBuyableType($options), $item->getBuyablePrice($options), $options);
     }
 
     /**
@@ -272,7 +283,7 @@ class CartItem implements Arrayable
     {
         $options = array_get($attributes, 'options', []);
 
-        return new self($attributes['id'], $attributes['name'], $attributes['price'], $options);
+        return new self($attributes['id'], $attributes['name'], $attributes['type'], $attributes['price'], $options);
     }
 
     /**
@@ -280,14 +291,15 @@ class CartItem implements Arrayable
      *
      * @param int|string $id
      * @param string     $name
-     * @param Money      $value
+     * @param string     $type
+     * @param Money      $price
      * @param array      $options
      *
      * @return \JohannesSchobel\ShoppingCart\Models\CartItem
      */
-    public static function fromAttributes($id, $name, $value, array $options = [])
+    public static function fromAttributes($id, $name, $type, $price, array $options = [])
     {
-        return new self($id, $name, $value, $options);
+        return new self($id, $name, $type, $price, $options);
     }
 
     /**
@@ -315,6 +327,7 @@ class CartItem implements Arrayable
             'rowId'    => $this->rowId,
             'id'       => $this->id,
             'name'     => $this->name,
+            'type'     => $this->type,
             'qty'      => $this->qty,
             'value'   => [
                 'currency' =>  $this->price->getCurrency(),

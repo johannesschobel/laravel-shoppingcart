@@ -43,4 +43,14 @@ trait CanBePurchased
 
         return null;
     }
+
+    /**
+     * Get the type of the Buyable item.
+     *
+     * @return string
+     */
+    public function getBuyableType($options = null)
+    {
+        return 'products';
+    }
 }

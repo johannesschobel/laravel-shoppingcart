@@ -26,4 +26,11 @@ interface Buyable
      * @return Money
      */
     public function getBuyablePrice($options = null);
+
+    /**
+     * Get the type of the Buyable item.
+     *
+     * @return mixed
+     */
+    public function getBuyableType($options = null);
 }

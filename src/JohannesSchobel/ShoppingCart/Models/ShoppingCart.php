@@ -55,13 +55,14 @@ class ShoppingCart extends Model
      *
      * @param mixed     $id
      * @param mixed     $name
+     * @param mixed     $type
      * @param int|float $qty
      * @param Money     $price
      * @param array     $options
      *
      * @return \JohannesSchobel\ShoppingCart\Models\ShoppingCart
      */
-    public function addItem($id, $name = null, $qty = null, $price = null, array $options = [])
+    public function addItem($id, $name = null, $type = null, $qty = null, $price = null, array $options = [])
     {
         if ($this->isMulti($id)) {
             return array_map(function ($item) {
@@ -69,7 +70,7 @@ class ShoppingCart extends Model
             }, $id);
         }
 
-        $cartItem = $this->createCartItem($id, $name, $qty, $price, $options);
+        $cartItem = $this->createCartItem($id, $name, $type, $qty, $price, $options);
 
         $content = $this->getContent();
 
@@ -119,15 +120,16 @@ class ShoppingCart extends Model
     /**
      * Create a new CartItem from the supplied attributes.
      *
-     * @param       $id
-     * @param       $name
-     * @param       $qty
-     * @param Money $value
-     * @param array $options
+     * @param            $id
+     * @param            $name
+     * @param            $type
+     * @param            $qty
+     * @param Money|null $price
+     * @param array      $options
      *
      * @return CartItem
      */
-    private function createCartItem($id, $name, $qty, Money $value, array $options = [])
+    private function createCartItem($id, $name, $type, $qty, Money $price = null, array $options = [])
     {
         if ($id instanceof Buyable) {
             $cartItem = CartItem::fromBuyable($id, $options);
@@ -137,7 +139,7 @@ class ShoppingCart extends Model
             $cartItem = CartItem::fromArray($id);
             $cartItem->setQuantity($id['qty']);
         } else {
-            $cartItem = CartItem::fromAttributes($id, $name, $value, $options);
+            $cartItem = CartItem::fromAttributes($id, $name, $type, $price, $options);
             $cartItem->setQuantity($qty);
         }
 
