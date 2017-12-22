@@ -212,6 +212,7 @@ class CartItem implements Arrayable
      * Associate the cart item with the given model.
      *
      * @param mixed $model
+     *
      * @return \JohannesSchobel\ShoppingCart\Models\CartItem
      */
     public function associate($model)
@@ -269,21 +270,15 @@ class CartItem implements Arrayable
      */
     public static function fromBuyable(Buyable $item, array $options = [])
     {
-        return new self($item->getBuyableIdentifier($options), $item->getBuyableDescription($options), $item->getBuyableType($options), $item->getBuyablePrice($options), $options);
-    }
+        $item = new self($item->getBuyableIdentifier($options),
+                         $item->getBuyableDescription($options),
+                         $item->getBuyableType($options),
+                         $item->getBuyablePrice($options),
+                         $options);
 
-    /**
-     * Create a new instance from the given array.
-     *
-     * @param array $attributes
-     *
-     * @return \JohannesSchobel\ShoppingCart\Models\CartItem
-     */
-    public static function fromArray(array $attributes)
-    {
-        $options = array_get($attributes, 'options', []);
+        $item->associate($item);
 
-        return new self($attributes['id'], $attributes['name'], $attributes['type'], $attributes['price'], $options);
+        return $item;
     }
 
     /**

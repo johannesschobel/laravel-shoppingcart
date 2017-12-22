@@ -7,7 +7,6 @@ use Illuminate\Support\Facades\Config;
 use JohannesSchobel\ShoppingCart\Contracts\Buyable;
 use JohannesSchobel\ShoppingCart\Exceptions\InvalidShoppingCartRowException;
 use Money\Currencies\ISOCurrencies;
-use Money\Currency;
 use Money\Formatter\DecimalMoneyFormatter;
 use Money\Money;
 
@@ -62,15 +61,37 @@ class ShoppingCart extends Model
      *
      * @return \JohannesSchobel\ShoppingCart\Models\ShoppingCart
      */
-    public function addItem($id, $name = null, $type = null, $qty = null, $price = null, array $options = [])
+    public function addItem($id, $name = null, $type = null, $qty = 1, $price = null, array $options = [])
     {
-        if ($this->isMulti($id)) {
-            return array_map(function ($item) {
-                return $this->addItem($item);
-            }, $id);
-        }
+        $cartItem = CartItem::fromAttributes($id, $name, $type, $price, $options);
 
-        $cartItem = $this->createCartItem($id, $name, $type, $qty, $price, $options);
+        return $this->addItemToCart($cartItem, $qty);
+    }
+
+    /**
+     * @param Buyable $item
+     * @param int     $qty
+     * @param array   $options
+     *
+     * @return ShoppingCart
+     */
+    public function addBuyable(Buyable $item, $qty = 1, array $options = [])
+    {
+        $cartItem = CartItem::fromBuyable($item, $options);
+
+        return $this->addItemToCart($cartItem, $qty);
+    }
+
+    /**
+     * @param CartItem $cartItem
+     * @param int      $qty
+     *
+     * @return $this
+     */
+    private function addItemToCart(CartItem $cartItem, $qty = 1)
+    {
+        $cartItem->setQuantity($qty);
+        $cartItem->setTaxRate(config('shoppingcart.tax'));
 
         $content = $this->getContent();
 
@@ -115,37 +136,6 @@ class ShoppingCart extends Model
     public function clear()
     {
         $this->delete();
-    }
-
-    /**
-     * Create a new CartItem from the supplied attributes.
-     *
-     * @param            $id
-     * @param            $name
-     * @param            $type
-     * @param            $qty
-     * @param Money|null $price
-     * @param array      $options
-     *
-     * @return CartItem
-     */
-    private function createCartItem($id, $name, $type, $qty, Money $price = null, array $options = [])
-    {
-        if ($id instanceof Buyable) {
-            $cartItem = CartItem::fromBuyable($id, $options);
-            $cartItem->setQuantity($qty ?: 1);
-            $cartItem->associate($id);
-        } elseif (is_array($id)) {
-            $cartItem = CartItem::fromArray($id);
-            $cartItem->setQuantity($id['qty']);
-        } else {
-            $cartItem = CartItem::fromAttributes($id, $name, $type, $price, $options);
-            $cartItem->setQuantity($qty);
-        }
-
-        $cartItem->setTaxRate(config('shoppingcart.tax'));
-
-        return $cartItem;
     }
 
     /**
@@ -268,21 +258,6 @@ class ShoppingCart extends Model
             'identifier' => $identifier,
             'name' => $name,
         ];
-    }
-
-    /**
-     * Check if the item is a multidimensional array or an array of Buyables.
-     *
-     * @param mixed $item
-     * @return bool
-     */
-    private function isMulti($item)
-    {
-        if (! is_array($item)) {
-            return false;
-        }
-
-        return is_array(head($item)) || (head($item) instanceof Buyable);
     }
 
     /**
