@@ -53,4 +53,12 @@ trait CanBePurchased
     {
         return 'products';
     }
+
+    /**
+     * @return string
+     */
+    public function getBuyableURI($options = null)
+    {
+        return $this->getBuyableType() . '/' . $this->id;
+    }
 }

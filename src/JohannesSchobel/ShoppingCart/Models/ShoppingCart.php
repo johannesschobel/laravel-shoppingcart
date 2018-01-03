@@ -57,13 +57,14 @@ class ShoppingCart extends Model
      * @param mixed     $type
      * @param int|float $qty
      * @param Money     $price
+     * @param null      $uri
      * @param array     $options
      *
-     * @return \JohannesSchobel\ShoppingCart\Models\ShoppingCart
+     * @return ShoppingCart
      */
-    public function addItem($id, $name = null, $type = null, $qty = 1, $price = null, array $options = [])
+    public function addItem($id, $name = null, $type = null, $qty = 1, Money $price = null, $uri = null, array $options = [])
     {
-        $cartItem = CartItem::fromAttributes($id, $name, $type, $price, $options);
+        $cartItem = CartItem::fromAttributes($id, $name, $type, $price, $uri, $options);
 
         return $this->addItemToCart($cartItem, $qty);
     }

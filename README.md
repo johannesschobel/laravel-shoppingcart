@@ -74,15 +74,31 @@ Removes the current instance of the cart from the database.
 ## ADD Items to the Cart
 
 ```php
-ShoppingCart::addItem($id, $name = null, $qty = null, Money $price = null, array $options = []);
+ShoppingCart::addItem(
+   $id, 
+   $name = null, 
+   $type = null, 
+   $qty = 1, 
+   Money $price = null, 
+   $uri = null, 
+   array $options = []
+);
 ```
 
 This method allows for adding items to the cart. The basic usage allows you to directly specify the item you want
 to set. For example
 ```php
-ShoppingCart::addItem('1234', 'Basic T-Shirt', 10, new Money(999, new Currency('EUR')), ['size' => 'large', 'color' => 'black']);
+ShoppingCart::addItem(
+   '1234', 
+   'Basic T-Shirt', 
+   'products', 
+   10, 
+   new Money(999, new Currency('EUR')), // note the value is added in cents! 
+   '/products/1234', 
+   ['size' => 'large', 'color' => 'black']
+);
 ```
-would add 10 "Basic T-Shirts", each costs 9.99 to the cart. The user has specified a color and size.
+would add 10 "Basic T-Shirts", each costs 9.99 EUR to the cart. The customer has specified a color and size.
 
 You may, however, add the `Buyable` interface to your products in order to simplify this process. This will require you 
 to implement additional methods on the model (you can add the `CanBePurchased` Trait in order to make a "best guess").
@@ -90,18 +106,13 @@ to implement additional methods on the model (you can add the `CanBePurchased` T
 This would allow you to just add a specific product:
 ```php
 $product = Product::find(1234); // remember, Product must implement the Buyable interface!
-ShoppingCart::addItem($product, null, 10, null, ['size' => 'large', 'color' => 'black']);
+ShoppingCart::addBuyable(
+   $product, 
+   10, 
+   ['size' => 'large', 'color' => 'black']
+);
 ```
-would result in the same cart as above. However, the `id`, `name` and `price` are directly taken from the model!
-
-Of course, you can pass arrays of elements as well!
-```php
-ShoppingCart::addItem([
-    ['id' => '1234', 'name' => 'Basic T-Shirt', 'qty' => 1, 'price' => new Money(999, new Currency('EUR'))],
-    ['id' => '1234', 'name' => 'Basic T-Shirt', 'qty' => 10, 'price' => new Money(999, new Currency('EUR')), ['color' => 'black'],
-    ['id' => '1234', 'name' => 'Basic T-Shirt', 'qty' => 5, 'price' => new Money(999, new Currency('EUR')), ['size' => 'large'],
-]);
-```
+would result in the same cart as above. However, the `id`, `name`, `price` and `uri` are directly taken from the model!
 
 ## REMOVE Items from the Cart
 
@@ -141,4 +152,5 @@ The Cart also provides methods to
   * get the taxes of the cart => `getTaxes()`
   * get total (value including taxes) => `getTotal()`
   * get subtotal (value without taxes) => `getSubTotal()`
+* get the "associated" `Buyable` model => `resolveModel()`
   

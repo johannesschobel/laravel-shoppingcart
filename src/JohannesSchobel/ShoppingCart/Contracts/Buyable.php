@@ -33,4 +33,13 @@ interface Buyable
      * @return mixed
      */
     public function getBuyableType($options = null);
+
+    /**
+     * Get the URI for this Buyable item.
+     *
+     * @param null $options
+     *
+     * @return mixed
+     */
+    public function getBuyableURI($options = null);
 }

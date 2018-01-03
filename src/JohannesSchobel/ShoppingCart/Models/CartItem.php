@@ -2,6 +2,7 @@
 
 namespace JohannesSchobel\ShoppingCart\Models;
 
+use Exception;
 use Illuminate\Contracts\Support\Arrayable;
 use JohannesSchobel\ShoppingCart\Contracts\Buyable;
 use Money\Currencies\ISOCurrencies;
@@ -51,6 +52,11 @@ class CartItem implements Arrayable
     private $type;
 
     /**
+     * @var string
+     */
+    private $uri;
+
+    /**
      * The options for this cart item.
      *
      * @var array
@@ -63,6 +69,13 @@ class CartItem implements Arrayable
      * @var string|null
      */
     private $model = null;
+
+    /**
+     * The real-ID of the associated model
+     *
+     * @var null
+     */
+    private $modelId = null;
 
     /**
      * The tax rate for the cart item.
@@ -78,11 +91,12 @@ class CartItem implements Arrayable
      * @param string     $name
      * @param string     $type
      * @param Money      $price
+     * @param string     $uri
      * @param array      $options
      *
      * @throws \InvalidArgumentException
      */
-    public function __construct($id, $name, $type, Money $price, array $options = [])
+    public function __construct($id, $name, $type, Money $price, $uri = null, array $options = [])
     {
         if (empty($id)) {
             throw new \InvalidArgumentException('Please supply a valid identifier.');
@@ -104,6 +118,7 @@ class CartItem implements Arrayable
         $this->name = $name;
         $this->type = $type;
         $this->price = $price;
+        $this->uri = $uri;
         $this->options = new CartItemOptions($options);
         $this->rowId = $this->generateRowId($id, $options);
     }
@@ -215,11 +230,46 @@ class CartItem implements Arrayable
      *
      * @return \JohannesSchobel\ShoppingCart\Models\CartItem
      */
-    public function associate($model)
+    public function setModel($model)
     {
-        $this->model = is_string($model) ? $model : get_class($model);
+        $this->model = get_class($model);
+        $this->modelId = $model->id;
         
         return $this;
+    }
+
+    /**
+     * @return null|string
+     */
+    public function getModel()
+    {
+        return $this->model;
+    }
+
+    /**
+     * @return mixed;
+     */
+    private function getModelId()
+    {
+        return $this->modelId;
+    }
+
+    /**
+     * @return null|Buyable
+     */
+    public function resolveModel()
+    {
+        if ($this->model == null) {
+            return null;
+        }
+
+        try {
+            $instance = with(new $this->model)->find($this->getModelId());
+            return $instance;
+        }
+        catch (Exception $exception) {
+            return null;
+        }
     }
 
     /**
@@ -253,10 +303,6 @@ class CartItem implements Arrayable
             return $this->{$attribute};
         }
 
-        if ($attribute === 'model') {
-            return with(new $this->model)->find($this->id);
-        }
-
         return null;
     }
 
@@ -270,15 +316,18 @@ class CartItem implements Arrayable
      */
     public static function fromBuyable(Buyable $item, array $options = [])
     {
-        $item = new self($item->getBuyableIdentifier($options),
+        $cartItem = new self(
+                         $item->getBuyableIdentifier($options),
                          $item->getBuyableDescription($options),
                          $item->getBuyableType($options),
                          $item->getBuyablePrice($options),
-                         $options);
+                         $item->getBuyableURI($options),
+                         $options
+        );
 
-        $item->associate($item);
+        $cartItem->setModel($item);
 
-        return $item;
+        return $cartItem;
     }
 
     /**
@@ -288,13 +337,16 @@ class CartItem implements Arrayable
      * @param string     $name
      * @param string     $type
      * @param Money      $price
+     * @param string     $uri
      * @param array      $options
      *
-     * @return \JohannesSchobel\ShoppingCart\Models\CartItem
+     * @return CartItem
      */
-    public static function fromAttributes($id, $name, $type, $price, array $options = [])
+    public static function fromAttributes($id, $name, $type, $price, $uri, array $options = [])
     {
-        return new self($id, $name, $type, $price, $options);
+        $cartItem = new self($id, $name, $type, $price, $uri, $options);
+
+        return $cartItem;
     }
 
     /**
@@ -324,6 +376,8 @@ class CartItem implements Arrayable
             'name'     => $this->name,
             'type'     => $this->type,
             'qty'      => $this->qty,
+            'uri'      => $this->uri,
+
             'value'   => [
                 'currency' =>  $this->price->getCurrency(),
 
