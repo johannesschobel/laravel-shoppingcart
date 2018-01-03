@@ -5,12 +5,14 @@ namespace JohannesSchobel\ShoppingCart\Models;
 use Exception;
 use Illuminate\Contracts\Support\Arrayable;
 use JohannesSchobel\ShoppingCart\Contracts\Buyable;
-use Money\Currencies\ISOCurrencies;
-use Money\Formatter\DecimalMoneyFormatter;
+use JohannesSchobel\ShoppingCart\Traits\FormatsMoneyTrait;
 use Money\Money;
 
 class CartItem implements Arrayable
 {
+
+    use FormatsMoneyTrait;
+
     /**
      * The rowID of the cart item.
      *
@@ -395,20 +397,5 @@ class CartItem implements Arrayable
 
             'options'  => $this->options,
         ];
-    }
-
-    /**
-     * Format a money string
-     *
-     * @param Money $value
-     *
-     * @return string
-     */
-    private function formatMoney(Money $value)
-    {
-        $currencies = new ISOCurrencies();
-        $moneyFormatter = new DecimalMoneyFormatter($currencies);
-
-        return $moneyFormatter->format($value);
     }
 }

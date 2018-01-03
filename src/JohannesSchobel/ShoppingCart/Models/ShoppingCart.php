@@ -6,12 +6,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Config;
 use JohannesSchobel\ShoppingCart\Contracts\Buyable;
 use JohannesSchobel\ShoppingCart\Exceptions\InvalidShoppingCartRowException;
-use Money\Currencies\ISOCurrencies;
-use Money\Formatter\DecimalMoneyFormatter;
+use JohannesSchobel\ShoppingCart\Traits\FormatsMoneyTrait;
 use Money\Money;
 
 class ShoppingCart extends Model
 {
+    use FormatsMoneyTrait;
+
 	const DEFAULT_NAME = 'default';
 	
     protected $table = 'shoppingcarts';
@@ -231,21 +232,6 @@ class ShoppingCart extends Model
         }, new Money(0, Config::get('shoppingcart.currency')));
 
         return $subTotal;
-    }
-
-    /**
-     * Format a money string
-     *
-     * @param Money $value
-     *
-     * @return string
-     */
-    public function formatMoney(Money $value)
-    {
-        $currencies = new ISOCurrencies();
-        $moneyFormatter = new DecimalMoneyFormatter($currencies);
-
-        return $moneyFormatter->format($value);
     }
 
     /**

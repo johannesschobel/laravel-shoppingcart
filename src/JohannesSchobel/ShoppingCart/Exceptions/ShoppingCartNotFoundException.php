@@ -2,7 +2,7 @@
 
 namespace JohannesSchobel\ShoppingCart\Exceptions;
 
-use \Exception;
+use Exception;
 
 class ShoppingCartNotFoundException extends Exception
 {
